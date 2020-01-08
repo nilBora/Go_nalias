@@ -35,20 +35,35 @@ func main() {
     flag.StringVar(&flagCreateType, "create", "", "Type entity")
     flag.StringVar(&flagCreateType, "c", "", "Type entity"+" (shorthand)")
 
-
-
     flag.Parse()
 
     if flagCreateType == "ssh" {
         doCreateSshAlias()
+        return
     }
 
-    if len(arguments) == 0 || *list == true{
+    if len(arguments) == 0 || *list == true {
         displayListAliases()
+        return
+    }
+
+    if len(arguments) == 1 {
+        doCreateSimpleAlias(arguments[0])
     }
 
     //fmt.Println(arguments)
 
+}
+
+func doCreateSimpleAlias(cmd string) {
+    chunks := strings.Split(cmd, "=")
+    if len(chunks) < 2 {
+        panic("For create alias, must type aliasName=command")
+    }
+    var command string
+    command = fmt.Sprintf("alias %s='%s'", chunks[0], chunks[1])
+    appendAliasToFile(command)
+    fmt.Println(command)
 }
 
 func doCreateSshAlias() {
@@ -66,6 +81,12 @@ func doCreateSshAlias() {
         trim(ssh.username),
         trim(ssh.host))
 
+    appendAliasToFile(aliasCmd)
+
+    fmt.Println(aliasCmd)
+}
+
+func appendAliasToFile(command string) {
     var filePath string = getAliasFilePath()
     f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0600)
     if err != nil {
@@ -73,13 +94,10 @@ func doCreateSshAlias() {
     }
     defer f.Close()
 
-    if _, err = f.WriteString(aliasCmd);
+    if _, err = f.WriteString(command);
     err != nil {
         panic(err)
     }
-
-    fmt.Println(aliasCmd)
-
 }
 
 func getSshUserData() (AliasSsh, error) {
